@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verwaltung – Dokumentenbasis Feuerwehrrecht</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rot:#B42318; --rot-d:#912016; --text:#1B1F24; --grau:#4B5563;
+  --rand:#D0D5DD; --feld:#667085; --bg:#F4F5F7; --kopf:#EEF0F3;
+  --fokus:#1D4ED8; --ok:#067647; --ok-bg:#ECFDF3; --fehler:#912018; --fehler-bg:#FEF3F2;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:16px;line-height:1.5;color:var(--text);background:var(--bg)}
+h1{margin:0;font-size:28px;line-height:1.25;font-weight:600}
+h2{margin:0;font-size:24px;line-height:1.25;font-weight:600}
+p{margin:0}
+.grau{color:var(--grau)}
+:focus-visible{outline:2px solid var(--fokus);outline-offset:2px}
+.logo{width:28px;height:28px;background:var(--rot);border-radius:6px;flex:none}
+
+/* Schaltflächen */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:8px;border:1px solid transparent;font:inherit;font-weight:500;cursor:pointer;text-decoration:none}
+.btn[disabled]{opacity:.6;cursor:not-allowed}
+.btn-primary{background:var(--rot);color:#fff}
+.btn-primary:hover:not([disabled]){background:var(--rot-d)}
+.btn-sek{background:#fff;color:var(--text);border-color:var(--feld)}
+.btn-sek:hover:not([disabled]){background:var(--kopf)}
+.btn-gefahr{background:#fff;color:var(--rot);border-color:var(--rot);font-size:14px;padding:0 14px}
+.btn-gefahr:hover{background:var(--fehler-bg)}
+.btn-klein{font-size:14px;padding:0 14px}
+.c-aktion .zelle{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+/* Formularfelder */
+.feld{display:flex;flex-direction:column;gap:6px}
+.feld label{font-size:14px;font-weight:500}
+input,select,textarea{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--feld);border-radius:8px;background:#fff;color:var(--text);width:100%}
+textarea{padding:10px 14px;min-height:88px;resize:vertical}
+input[type=file]{padding:9px 14px}
+.hilfe{font-size:13px;color:var(--grau)}
+
+/* Meldungen */
+.meldung{padding:12px 14px;border-radius:8px;font-size:15px;border:1px solid transparent}
+.meldung.fehler{background:var(--fehler-bg);color:var(--fehler);border-color:#FDA29B}
+.meldung.ok{background:var(--ok-bg);color:var(--ok);border-color:#75E0A7}
+.meldung.info{background:var(--kopf);color:var(--text);border-color:var(--rand)}
+
+/* Anmeldung */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.karte{width:100%;max-width:400px;background:#fff;border:1px solid var(--rand);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:20px}
+.karte form{display:flex;flex-direction:column;gap:20px}
+
+/* Kopfzeile */
+.kopf{background:#fff;border-bottom:1px solid var(--rand)}
+.kopf-innen{max-width:1120px;margin:0 auto;padding:0 24px;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.marke{display:flex;align-items:center;gap:12px;font-weight:600}
+.kopf-rechts{display:flex;align-items:center;gap:16px}
+.kopf-rechts span{font-size:14px;overflow-wrap:anywhere}
+
+/* Hauptbereich */
+.haupt{max-width:1120px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:20px}
+.werkzeug{display:flex;align-items:flex-end;gap:16px}
+.werkzeug .feld{flex:1}
+.tabelle{max-height:min(520px,62vh);min-height:200px;overflow:auto;background:#fff;border:1px solid var(--rand);border-radius:8px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{position:sticky;top:0;z-index:1;background:var(--kopf);text-align:left;font-size:13px;font-weight:600;color:var(--grau);padding:12px 16px;border-bottom:1px solid var(--rand)}
+td{padding:12px 16px;border-bottom:1px solid #E5E7EB;font-size:15px;vertical-align:middle;overflow-wrap:anywhere}
+tbody tr:hover{background:#F7F8FA}
+.c-name{font-weight:500}
+.c-beschr{color:var(--grau)}
+.leer{padding:32px 16px;text-align:center;color:var(--grau);display:flex;flex-direction:column;align-items:center;gap:16px}
+.anzahl{font-size:13px;color:var(--grau)}
+
+/* Dialoge */
+dialog{border:1px solid var(--rand);border-radius:12px;padding:32px;width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;color:var(--text)}
+dialog::backdrop{background:rgba(16,24,40,.55)}
+dialog form{display:flex;flex-direction:column;gap:20px}
+.aktionen{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:8px}
+.umschalter{display:flex;border:1px solid var(--feld);border-radius:8px;overflow:hidden}
+.umschalter button{flex:1;min-height:44px;padding:0 12px;border:0;background:#fff;color:var(--text);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.umschalter button[aria-pressed="true"]{background:var(--text);color:#fff}
+.umschalter button + button{border-left:1px solid var(--feld)}
+.zusammenfassung{background:var(--bg);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.zusammenfassung strong{font-weight:600}
+
+/* Schmale Bildschirme */
+@media (max-width:720px){
+  .werkzeug{flex-direction:column;align-items:stretch}
+  .haupt{padding:24px 16px}
+  .kopf-innen{padding:12px 16px}
+  table,tbody,tr,td{display:block;width:100%}
+  thead{display:none}
+  tr{padding:12px 0;border-bottom:1px solid #E5E7EB}
+  td{border:0;padding:4px 16px}
+  td[data-label]::before{content:attr(data-label) ": ";font-size:13px;color:var(--grau)}
+  td.c-name::before{content:""}
+  .c-aktion .zelle{justify-content:flex-start}
+  dialog{padding:24px}
+}
+</style>
+</head>
+<body>
+
+<noscript><p style="padding:24px">Diese Seite benötigt JavaScript.</p></noscript>
+
+<!-- ============ Anmeldung ============ -->
+<div id="view-login" class="login-wrap" hidden>
+  <div class="karte">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="logo"></div>
+      <h1 style="font-size:24px">Anmelden</h1>
+      <p class="grau" style="font-size:15px">Die Verwaltung der Dokumentenbasis ist nur für berechtigte Personen zugänglich.</p>
+    </div>
+    <p id="cfg-warnung" class="meldung fehler" hidden>Die Seite ist noch nicht eingerichtet. Tragen Sie in der Datei config.js die Adressen und Schlüssel ein.</p>
+    <form id="form-login" novalidate>
+      <div class="feld">
+        <label for="mail">E-Mail-Adresse</label>
+        <input id="mail" type="email" autocomplete="username" required>
+      </div>
+      <div class="feld">
+        <label for="pw">Passwort</label>
+        <input id="pw" type="password" autocomplete="current-password" required>
+      </div>
+      <p id="login-fehler" class="meldung fehler" role="alert" hidden></p>
+      <button id="btn-login" class="btn btn-primary" type="submit">Anmelden</button>
+    </form>
+    <a class="btn btn-sek" href="Assistent_SAM.html">Zurück zum Chat</a>
+  </div>
+</div>
+
+<!-- ============ Hauptseite ============ -->
+<div id="view-app" hidden>
+  <header class="kopf">
+    <div class="kopf-innen">
+      <div class="marke"><div class="logo"></div><span>Dokumentenbasis Feuerwehrrecht</span></div>
+      <div class="kopf-rechts">
+        <span id="user-mail" class="grau"></span>
+        <a class="btn btn-sek" href="Assistent_SAM.html">Zum Chat</a>
+        <button id="btn-logout" class="btn btn-sek" type="button">Abmelden</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="haupt">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1>Dokumentenbasis</h1>
+      <p class="grau">Alle Dokumente und Versionen, auf die das Recherche-Tool zugreift.</p>
+    </div>
+
+    <div class="werkzeug">
+      <div class="feld">
+        <label for="suche">Suche in Name und Beschreibung</label>
+        <input id="suche" type="search" placeholder="Begriff eingeben, um die Liste zu filtern" autocomplete="off">
+      </div>
+      <button id="btn-add" class="btn btn-primary" type="button">Dokument hinzufügen</button>
+    </div>
+
+    <p id="hinweis" class="meldung" role="status" hidden></p>
+
+    <div class="tabelle" id="tabelle" tabindex="0" role="region" aria-label="Liste der Dokumente und Versionen">
+      <table>
+        <colgroup>
+          <col style="width:22%"><col style="width:32%"><col style="width:14%"><col style="width:32%">
+        </colgroup>
+        <thead>
+          <tr><th scope="col">Dokumentenname</th><th scope="col">Beschreibung</th><th scope="col">Versionsdatum</th><th scope="col"><span style="position:absolute;left:-9999px">Aktionen</span></th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="leer" class="leer" hidden></div>
+    </div>
+    <p id="anzahl" class="anzahl" aria-live="polite"></p>
+  </main>
+</div>
+
+<!-- ============ Dialog: Hinzufügen ============ -->
+<dialog id="dlg-add" aria-labelledby="add-titel">
+  <form id="form-add" novalidate>
+    <h2 id="add-titel">Dokument hinzufügen</h2>
+
+    <div class="umschalter" role="group" aria-label="Art des Eintrags">
+      <button type="button" id="tab-neu" aria-pressed="true">Neues Dokument</button>
+      <button type="button" id="tab-version" aria-pressed="false">Neue Version eines Dokuments</button>
+    </div>
+
+    <div id="grp-neu" style="display:flex;flex-direction:column;gap:20px">
+      <div class="feld">
+        <label for="f-name">Dokumentenname</label>
+        <input id="f-name" type="text" autocomplete="off">
+      </div>
+      <div class="feld">
+        <label for="f-beschr">Beschreibung</label>
+        <textarea id="f-beschr"></textarea>
+      </div>
+    </div>
+
+    <div id="grp-version" class="feld" hidden>
+      <label for="f-dok">Vorhandenes Dokument</label>
+      <select id="f-dok"></select>
+      <span id="f-dok-hilfe" class="hilfe">Name und Beschreibung bleiben unverändert.</span>
+    </div>
+
+    <div class="feld">
+      <label for="f-datum">Versionsdatum</label>
+      <input id="f-datum" type="date">
+      <span class="hilfe">Pro Dokument ist jedes Versionsdatum nur einmal möglich.</span>
+    </div>
+
+    <div class="feld">
+      <label for="f-datei">Datei</label>
+      <input id="f-datei" type="file" accept=".pdf,.docx,.txt">
+      <span class="hilfe">PDF, Word oder Text, höchstens 15 MB.</span>
+    </div>
+
+    <p id="add-meldung" class="meldung" role="alert" hidden></p>
+
+    <div class="aktionen">
+      <button id="add-abbrechen" class="btn btn-sek" type="button">Abbrechen</button>
+      <button id="add-senden" class="btn btn-primary" type="submit">Hinzufügen</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ Dialog: Entfernen ============ -->
+<dialog id="dlg-del" aria-labelledby="del-titel">
+  <form id="form-del">
+    <h2 id="del-titel">Version entfernen?</h2>
+    <div class="zusammenfassung">
+      <strong id="del-name"></strong>
+      <span id="del-datum" class="grau"></span>
+    </div>
+    <p>Die Datei in Google Drive, die zugehörigen Textabschnitte in der Wissensbasis und der Eintrag dieser Version werden endgültig gelöscht. War es die letzte Version, wird auch das Dokument entfernt.</p>
+    <p id="del-meldung" class="meldung" role="alert" hidden></p>
+    <div class="aktionen">
+      <button id="del-abbrechen" class="btn btn-sek" type="button">Abbrechen</button>
+      <button id="del-senden" class="btn btn-primary" type="submit">Endgültig entfernen</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const konfigOffen = Object.values(CONFIG).some(v => typeof v === 'string' && v.includes('DEIN-'));
+const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let alle = [];          // alle Zeilen der Ansicht dokument_liste
+let beschaeftigt = false;
+let zuLoeschen = null;
+
+/* ---------- Hilfsfunktionen ---------- */
+function el(tag, props = {}) {
+  const e = document.createElement(tag);
+  Object.assign(e, props);
+  return e;
+}
+function formatDatum(iso) {
+  if (!iso) return '';
+  const [j, m, t] = iso.split('-');
+  return `${t}.${m}.${j}`;
+}
+function zeigeAnsicht(name) {
+  $('view-login').hidden = name !== 'login';
+  $('view-app').hidden = name !== 'app';
+}
+function setMeldung(knoten, text, art) {
+  knoten.hidden = !text;
+  knoten.textContent = text || '';
+  knoten.className = 'meldung' + (art ? ' ' + art : '');
+}
+function hinweis(text, art) { setMeldung($('hinweis'), text, art); }
+
+/* ---------- Anmeldung ---------- */
+$('form-login').addEventListener('submit', async e => {
+  e.preventDefault();
+  setMeldung($('login-fehler'), '');
+  const email = $('mail').value.trim();
+  const password = $('pw').value;
+  if (!email || !password) {
+    setMeldung($('login-fehler'), 'Bitte E-Mail-Adresse und Passwort eingeben.', 'fehler');
+    return;
+  }
+  $('btn-login').disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  $('btn-login').disabled = false;
+  if (error) {
+    setMeldung($('login-fehler'), 'E-Mail-Adresse oder Passwort stimmt nicht.', 'fehler');
+    return;
+  }
+  $('pw').value = '';
+  await starteApp(data.user);
+});
+
+async function abmelden() {
+  await sb.auth.signOut();
+  alle = [];
+  zeigeAnsicht('login');
+}
+$('btn-logout').addEventListener('click', abmelden);
+
+async function starteApp(user) {
+  $('user-mail').textContent = user.email || '';
+  hinweis('');
+  zeigeAnsicht('app');
+  await ladeListe();
+}
+
+/* ---------- Liste laden und anzeigen ---------- */
+async function ladeListe() {
+  setLeer('Liste wird geladen …');
+  const { data, error } = await sb
+    .from('dokument_liste')
+    .select('*')
+    .order('name', { ascending: true })
+    .order('versionsdatum', { ascending: false });
+  if (error) {
+    if (error.status === 401 || error.code === 'PGRST301') {
+      await abmelden();
+      return;
+    }
+    alle = [];
+    $('tbody').replaceChildren();
+    $('anzahl').textContent = '';
+    setLeer('Die Liste konnte nicht geladen werden. Bitte die Seite neu laden. (' + error.message + ')');
+    return;
+  }
+  alle = data || [];
+  render();
+}
+
+function setLeer(text, mitKnopf, knopfText, knopfAktion) {
+  const box = $('leer');
+  box.replaceChildren();
+  if (!text) { box.hidden = true; return; }
+  box.append(el('span', { textContent: text }));
+  if (mitKnopf) {
+    const b = el('button', { type: 'button', className: 'btn btn-primary', textContent: knopfText });
+    b.addEventListener('click', knopfAktion);
+    box.append(b);
+  }
+  box.hidden = false;
+}
+
+function render() {
+  const begriff = $('suche').value.trim();
+  const b = begriff.toLowerCase();
+  const treffer = alle.filter(d =>
+    !b || ((d.name || '') + ' ' + (d.beschreibung || '')).toLowerCase().includes(b));
+
+  const tb = $('tbody');
+  tb.replaceChildren();
+  for (const d of treffer) {
+    const tr = el('tr');
+    const tdName = el('td', { className: 'c-name', textContent: d.name });
+    const tdBeschr = el('td', { className: 'c-beschr', textContent: d.beschreibung || '' });
+    tdBeschr.dataset.label = 'Beschreibung';
+    const tdDatum = el('td', { textContent: formatDatum(d.versionsdatum) });
+    tdDatum.dataset.label = 'Version vom';
+    const tdAktion = el('td', { className: 'c-aktion' });
+    const zelle = el('div', { className: 'zelle' });
+    const dl = el('button', { type: 'button', className: 'btn btn-sek btn-klein', textContent: 'Herunterladen' });
+    dl.setAttribute('aria-label', `Herunterladen: ${d.name}, Version vom ${formatDatum(d.versionsdatum)}`);
+    dl.addEventListener('click', () => herunterladen(d, dl));
+    const btn = el('button', { type: 'button', className: 'btn btn-gefahr', textContent: 'Entfernen' });
+    btn.setAttribute('aria-label', `Entfernen: ${d.name}, Version vom ${formatDatum(d.versionsdatum)}`);
+    btn.addEventListener('click', () => oeffneEntfernen(d));
+    zelle.append(dl, btn);
+    tdAktion.append(zelle);
+    tr.append(tdName, tdBeschr, tdDatum, tdAktion);
+    tb.append(tr);
+  }
+
+  if (alle.length === 0) {
+    setLeer('Noch keine Dokumente vorhanden.', true, 'Dokument hinzufügen', () => oeffneAdd());
+  } else if (treffer.length === 0) {
+    setLeer(`Kein Dokument zu „${begriff}“ gefunden.`, true, 'Als neues Dokument hinzufügen', () => oeffneAdd(begriff));
+  } else {
+    setLeer('');
+  }
+  $('anzahl').textContent = alle.length === 0 ? '' :
+    `${treffer.length} von ${alle.length} Einträgen, eine Zeile pro Version.`;
+}
+$('suche').addEventListener('input', render);
+
+/* ---------- Aufruf der n8n-Webhooks ---------- */
+async function webhookPost(pfad, body, alsJson) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { await abmelden(); throw new Error('keine Sitzung'); }
+  const headers = { Authorization: 'Bearer ' + session.access_token };
+  if (alsJson) headers['Content-Type'] = 'application/json';
+  const res = await fetch(CONFIG.WEBHOOK_BASE + pfad, {
+    method: 'POST',
+    headers,
+    body: alsJson ? JSON.stringify(body) : body
+  });
+  let antwort = null;
+  try { antwort = await res.json(); } catch (_) { /* Antwort ohne JSON */ }
+  return { status: res.status, ok: res.ok, antwort };
+}
+function fehlerText(r) {
+  if (r.status === 401) return 'Ihre Anmeldung ist nicht mehr gültig. Bitte melden Sie sich neu an.';
+  if (r.status === 409) return 'Diese Version existiert bereits.';
+  const f = r.antwort && r.antwort.fehler;
+  if (Array.isArray(f)) return f.join('. ') + '.';
+  if (typeof f === 'string') return f;
+  return `Unerwarteter Fehler (Status ${r.status}).`;
+}
+const NETZ_FEHLER = 'Der Server ist nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.';
+
+/* ---------- Download einer Datei ---------- */
+const ENDUNGEN = {
+  'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/msword': '.doc',
+  'text/plain': '.txt',
+  'text/markdown': '.md'
+};
+
+async function webhookDownload(pfad, body) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { await abmelden(); throw new Error('keine Sitzung'); }
+  const res = await fetch(CONFIG.WEBHOOK_BASE + pfad, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const typ = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  if (!res.ok || typ === 'application/json') {
+    let antwort = null;
+    try { antwort = await res.json(); } catch (_) { /* Antwort ohne JSON */ }
+    return { status: res.status, ok: false, antwort };
+  }
+  return { status: res.status, ok: true, blob: await res.blob(), typ };
+}
+
+async function herunterladen(d, knopf) {
+  if (knopf.disabled) return;
+  const beschriftung = knopf.textContent;
+  knopf.disabled = true;
+  knopf.textContent = 'Lädt …';
+  hinweis('');
+  try {
+    const r = await webhookDownload('/versionen/download', { version_id: d.version_id });
+    if (!r.ok) {
+      hinweis(fehlerText(r), 'fehler');
+      //if (r.status === 401) await abmelden();
+      return;
+    }
+    const dateiname = `${d.name}, Version vom ${formatDatum(d.versionsdatum)}`
+      .replace(/[\\/:*?"<>|]+/g, '_') + (ENDUNGEN[r.typ] || '');
+    const url = URL.createObjectURL(r.blob);
+    const a = el('a', { href: url, download: dateiname });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    hinweis(NETZ_FEHLER, 'fehler');
+  } finally {
+    knopf.disabled = false;
+    knopf.textContent = beschriftung;
+  }
+}
+
+/* ---------- Dialog: Hinzufügen ---------- */
+let modus = 'neu';
+function setModus(m) {
+  modus = m;
+  $('tab-neu').setAttribute('aria-pressed', String(m === 'neu'));
+  $('tab-version').setAttribute('aria-pressed', String(m === 'version'));
+  $('grp-neu').hidden = m !== 'neu';
+  $('grp-version').hidden = m !== 'version';
+  setMeldung($('add-meldung'), '');
+  aktualisiereVersionsHilfe();
+}
+function fuelleDokumentAuswahl() {
+  const sel = $('f-dok');
+  sel.replaceChildren(new Option('Bitte wählen …', ''));
+  const dokumente = new Map();
+  for (const v of alle) if (!dokumente.has(v.dokument_id)) dokumente.set(v.dokument_id, v.name);
+  [...dokumente].sort((a, b) => a[1].localeCompare(b[1], 'de'))
+    .forEach(([id, name]) => sel.append(new Option(name, id)));
+}
+function aktualisiereVersionsHilfe() {
+  const id = $('f-dok').value;
+  const hilfe = $('f-dok-hilfe');
+  if (!id) { hilfe.textContent = 'Name und Beschreibung bleiben unverändert.'; return; }
+  const daten = alle.filter(v => v.dokument_id === id).map(v => formatDatum(v.versionsdatum));
+  hilfe.textContent = 'Vorhandene Versionen: ' + daten.join(', ') + '. Name und Beschreibung bleiben unverändert.';
+}
+$('f-dok').addEventListener('change', aktualisiereVersionsHilfe);
+$('tab-neu').addEventListener('click', () => setModus('neu'));
+$('tab-version').addEventListener('click', () => setModus('version'));
+
+function oeffneAdd(vorbelegterName = '') {
+  $('form-add').reset();
+  fuelleDokumentAuswahl();
+  setModus('neu');
+  $('f-name').value = vorbelegterName;
+  setSendet(false);
+  $('dlg-add').showModal();
+}
+$('btn-add').addEventListener('click', () => oeffneAdd());
+$('add-abbrechen').addEventListener('click', () => $('dlg-add').close());
+$('dlg-add').addEventListener('cancel', e => { if (beschaeftigt) e.preventDefault(); });
+
+function setSendet(an, text) {
+  beschaeftigt = an;
+  $('add-senden').disabled = an;
+  $('add-abbrechen').disabled = an;
+  $('tab-neu').disabled = an;
+  $('tab-version').disabled = an;
+  if (an) setMeldung($('add-meldung'), text, 'info');
+}
+
+$('form-add').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (beschaeftigt) return;
+  const meld = t => setMeldung($('add-meldung'), t, 'fehler');
+  setMeldung($('add-meldung'), '');
+
+  const datum = $('f-datum').value;
+  const datei = $('f-datei').files[0];
+  const name = $('f-name').value.trim();
+  const beschr = $('f-beschr').value.trim();
+  const dokId = $('f-dok').value;
+
+  if (modus === 'neu' && !name) return meld('Bitte einen Dokumentennamen eingeben.');
+  if (modus === 'version' && !dokId) return meld('Bitte ein vorhandenes Dokument auswählen.');
+  if (!datum) return meld('Bitte das Versionsdatum angeben.');
+  if (!datei) return meld('Bitte eine Datei auswählen.');
+  if (datei.size > CONFIG.MAX_DATEI_MB * 1024 * 1024)
+    return meld(`Die Datei ist größer als ${CONFIG.MAX_DATEI_MB} MB.`);
+
+  if (modus === 'neu' && alle.some(d => (d.name || '').trim().toLowerCase() === name.toLowerCase()))
+    return meld('Ein Dokument mit diesem Namen gibt es bereits. Wählen Sie „Neue Version eines Dokuments“.');
+  if (modus === 'version' && alle.some(d => d.dokument_id === dokId && d.versionsdatum === datum))
+    return meld('Zu diesem Dokument gibt es schon eine Version mit diesem Datum.');
+
+  const fd = new FormData();
+  fd.append('versionsdatum', datum);
+  if (modus === 'neu') { fd.append('name', name); fd.append('beschreibung', beschr); }
+  else { fd.append('dokument_id', dokId); }
+  fd.append('datei', datei, datei.name);
+
+  setSendet(true, 'Die Datei wird hochgeladen und verarbeitet. Bei langen Dokumenten kann das einige Minuten dauern. Bitte dieses Fenster geöffnet lassen.');
+  try {
+    const r = await webhookPost('/dokumente', fd, false);
+    if (r.ok) {
+      setSendet(false);
+      $('dlg-add').close();
+      await ladeListe();
+      hinweis('Dokument hinzugefügt: ' + (modus === 'neu' ? name : $('f-dok').selectedOptions[0].text) +
+        ', Version vom ' + formatDatum(datum) + '.', 'ok');
+    } else {
+      setSendet(false);
+      meld(fehlerText(r));
+      if (r.status === 401) { $('dlg-add').close(); await abmelden(); }
+    }
+  } catch (err) {
+    setSendet(false);
+    meld(NETZ_FEHLER);
+  }
+});
+
+/* ---------- Dialog: Entfernen ---------- */
+function oeffneEntfernen(d) {
+  zuLoeschen = d;
+  $('del-name').textContent = d.name;
+  $('del-datum').textContent = 'Version vom ' + formatDatum(d.versionsdatum);
+  setMeldung($('del-meldung'), '');
+  $('del-senden').disabled = false;
+  $('del-abbrechen').disabled = false;
+  $('dlg-del').showModal();
+}
+$('del-abbrechen').addEventListener('click', () => $('dlg-del').close());
+$('dlg-del').addEventListener('cancel', e => { if (beschaeftigt) e.preventDefault(); });
+
+$('form-del').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (beschaeftigt || !zuLoeschen) return;
+  beschaeftigt = true;
+  $('del-senden').disabled = true;
+  $('del-abbrechen').disabled = true;
+  setMeldung($('del-meldung'), 'Die Version wird entfernt. Bitte dieses Fenster geöffnet lassen.', 'info');
+  const d = zuLoeschen;
+  try {
+    const r = await webhookPost('/versionen/loeschen', { version_id: d.version_id }, true);
+    beschaeftigt = false;
+    if (r.ok) {
+      $('dlg-del').close();
+      await ladeListe();
+      hinweis(`Entfernt: ${d.name}, Version vom ${formatDatum(d.versionsdatum)}.`, 'ok');
+    } else {
+      $('del-senden').disabled = false;
+      $('del-abbrechen').disabled = false;
+      setMeldung($('del-meldung'), fehlerText(r), 'fehler');
+      if (r.status === 401) { $('dlg-del').close(); await abmelden(); }
+    }
+  } catch (err) {
+    beschaeftigt = false;
+    $('del-senden').disabled = false;
+    $('del-abbrechen').disabled = false;
+    setMeldung($('del-meldung'), NETZ_FEHLER, 'fehler');
+  }
+});
+
+/* ---------- Start ---------- */
+sb.auth.onAuthStateChange(event => {
+  if (event === 'SIGNED_OUT') zeigeAnsicht('login');
+});
+
+(async function init() {
+  if (konfigOffen) {
+    $('cfg-warnung').hidden = false;
+    zeigeAnsicht('login');
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await starteApp(session.user);
+  else zeigeAnsicht('login');
+})();
+</script>
+</body>
+</html>
